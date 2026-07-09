@@ -1,0 +1,193 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BHIV EXECUTIVE DESIGN SYSTEM — Phase 6
+   Single CSS file. Sections mirror designSystem.js exactly.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── § BASE RESET ─────────────────────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    background-color: #0D1117;
+    color: #E6EDF3;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ── § TYPOGRAPHY HIERARCHY — base styles ─────────────────────────────── */
+  /* Applied via utility classes below — base only sets body defaults */
+
+  /* ── § SCROLLBAR — thin, unobtrusive ──────────────────────────────────── */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: #161B22; }
+  ::-webkit-scrollbar-thumb { background: #30363D; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: #8B949E; }
+
+  /* ── § ACCESSIBILITY — focus ring ─────────────────────────────────────── */
+  /* status-blue (#1565C0) focus ring — visible on all surface colors */
+  :focus-visible {
+    outline: 2px solid #1565C0;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Remove focus ring for mouse users — only show for keyboard */
+  :focus:not(:focus-visible) { outline: none; }
+}
+
+/* ── § COLOR SEMANTICS — utility classes ──────────────────────────────────── */
+@layer utilities {
+  /* Text status colors */
+  .status-red    { color: #D32F2F; }
+  .status-amber  { color: #F57C00; }
+  .status-green  { color: #388E3C; }
+  .status-blue   { color: #1565C0; }
+
+  /* Background status colors */
+  .bg-status-red   { background-color: #D32F2F; }
+  .bg-status-amber { background-color: #F57C00; }
+  .bg-status-green { background-color: #388E3C; }
+  .bg-status-blue  { background-color: #1565C0; }
+
+  /* Border status colors */
+  .border-status-red   { border-color: #D32F2F; }
+  .border-status-amber { border-color: #F57C00; }
+  .border-status-green { border-color: #388E3C; }
+  .border-status-blue  { border-color: #1565C0; }
+
+  /* ── § TYPOGRAPHY HIERARCHY — utility classes ─────────────────────────── */
+  /* Use these classes in components instead of raw Tailwind font-size classes */
+  .type-display { font-size: 32px; font-weight: 700; line-height: 1; }
+  .type-h1      { font-size: 24px; font-weight: 600; line-height: 1.2; }
+  .type-h2      { font-size: 18px; font-weight: 600; line-height: 1.3; }
+  .type-body    { font-size: 14px; font-weight: 400; line-height: 1.4; }
+  .type-caption { font-size: 12px; font-weight: 400; line-height: 1.4; }
+  .type-micro   { font-size: 10px; font-weight: 500; line-height: 1.2; }
+
+  /* Zone label pattern — always MICRO + uppercase + tracking */
+  .zone-label {
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #8B949E;
+  }
+
+  /* ── § COMPONENT CONSISTENCY — badge pattern ──────────────────────────── */
+  .badge {
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.2;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  /* ── § DASHBOARD RHYTHM — divider pattern ─────────────────────────────── */
+  /* Applied to card rows: border-b on all but last child */
+  .row-divider { border-bottom: 1px solid #30363D; }
+  .row-divider:last-child { border-bottom: none; }
+
+  /* ── § RESPONSIVE BEHAVIOR — max-width container ─────────────────────── */
+  .dashboard-container {
+    max-width: 1600px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+  }
+}
+
+/* ── § ANIMATIONS ─────────────────────────────────────────────────────────── */
+
+/* DetailPanel: slides from right — preserves spatial context (UX Principle 2) */
+@keyframes slide-in-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.panel-slide-in {
+  animation: slide-in-right 200ms ease-out forwards;
+}
+
+/* FocusMode: fades in — full-screen transition should feel calm (UX Principle 7) */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.focus-fade-in {
+  animation: fade-in 150ms ease-out forwards;
+}
+
+/* CommandHeader: green border pulse signals data just refreshed (UX Principle 9) */
+@keyframes refresh-pulse {
+  0%   { box-shadow: 0 0 0 0   rgba(56, 142, 60, 0.6); }
+  50%  { box-shadow: 0 0 0 4px rgba(56, 142, 60, 0.2); }
+  100% { box-shadow: 0 0 0 0   rgba(56, 142, 60, 0);   }
+}
+.refresh-pulse {
+  animation: refresh-pulse 600ms ease-out forwards;
+}
+
+/* ── § ACCESSIBILITY — reduced motion ─────────────────────────────────────── */
+/* Respects OS-level "reduce motion" preference — all animations disabled */
+@media (prefers-reduced-motion: reduce) {
+  .panel-slide-in,
+  .focus-fade-in,
+  .refresh-pulse {
+    animation: none;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── § ACCESSIBILITY — high contrast mode ─────────────────────────────────── */
+/* Windows High Contrast / forced-colors mode — borders become visible */
+@media (forced-colors: active) {
+  .bg-status-red,
+  .bg-status-amber,
+  .bg-status-green { forced-color-adjust: none; }
+}
+
+/* ── § PANEL BACKDROP ─────────────────────────────────────────────────────── */
+/* Transparent click-to-close layer behind DetailPanel (UX Principle 2) */
+.panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+  background: transparent;
+}
+
+/* ── § RESPONSIVE BEHAVIOR — below lg stacking ────────────────────────────── */
+/* Below 1024px: all grid zones collapse to single column */
+@media (max-width: 1023px) {
+  /* ProjectHealthGrid: 4-col → 2-col */
+  .project-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+@media (max-width: 639px) {
+  /* ProjectHealthGrid: 2-col → 1-col on small screens */
+  .project-grid { grid-template-columns: 1fr !important; }
+
+  /* ExecutiveSummary KPIs: 5-col → 2-col */
+  .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* ── § COMPONENT CONSISTENCY — skeleton loading ───────────────────────────── */
+/* Use animate-pulse + these classes for loading states */
+.skeleton-line {
+  height: 12px;
+  border-radius: 4px;
+  background-color: #21262D;
+}
+.skeleton-block {
+  border-radius: 4px;
+  background-color: #21262D;
+}
