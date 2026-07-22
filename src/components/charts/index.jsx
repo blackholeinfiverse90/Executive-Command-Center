@@ -31,6 +31,7 @@ export function ConfidenceTrendChart({ history, trend }) {
                        '#F57C00'
 
   return (
+    <div role="img" aria-label={`Delivery confidence trend over 7 days, currently ${history[history.length - 1]?.value ?? ''}%`}>
     <ResponsiveContainer width="100%" height={52}>
       <AreaChart data={history} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
         <defs>
@@ -52,6 +53,7 @@ export function ConfidenceTrendChart({ history, trend }) {
         />
       </AreaChart>
     </ResponsiveContainer>
+    </div>
   )
 }
 
@@ -81,6 +83,7 @@ export function MilestoneGantt({ milestones }) {
   }))
 
   return (
+    <div role="img" aria-label="Milestone variance Gantt chart showing planned vs actual delivery">
     <ResponsiveContainer width="100%" height={milestones.length * 28 + 8}>
       <BarChart
         data={data}
@@ -105,6 +108,7 @@ export function MilestoneGantt({ milestones }) {
         </Bar>
       </BarChart>
     </ResponsiveContainer>
+    </div>
   )
 }
 
@@ -127,6 +131,7 @@ export function PortfolioDonut({ onTrack, atRisk, blocked, total }) {
   ]
 
   return (
+    <div role="img" aria-label={`Portfolio health: ${onTrack} on track, ${atRisk} at risk, ${blocked} blocked out of ${total} projects`}>
     <ResponsiveContainer width={80} height={80}>
       <RadialBarChart
         cx="50%" cy="50%"
@@ -138,5 +143,6 @@ export function PortfolioDonut({ onTrack, atRisk, blocked, total }) {
         <RadialBar dataKey="value" background={{ fill: '#21262D' }} isAnimationActive={false} />
       </RadialBarChart>
     </ResponsiveContainer>
+    </div>
   )
 }

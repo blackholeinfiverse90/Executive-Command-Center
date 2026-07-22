@@ -13,17 +13,16 @@ import { bySeverity } from '../config/informationHierarchy'
  *   - all Tier 3 data filtered to focused project
  */
 export function FocusMode({ data }) {
-  const { focusProjectId, exitFocus, focusNext, focusPrev, enterFocus } = useCommandStore()
+  const { focusProjectId, exitFocus, focusNext, focusPrev, enterFocus } = useCommandStore((s) => s)
 
-  // Build severity-sorted project list for switcher on mount
+  // Build severity-sorted project list for switcher on mount if not already set
+  const focusProjectList = useCommandStore((s) => s.focusProjectList)
   useEffect(() => {
-    if (data?.projects && focusProjectId) {
+    if (data?.projects && focusProjectId && focusProjectList.length === 0) {
       const sorted = [...data.projects].sort(bySeverity).map((p) => p.id)
-      // Re-enter focus with sorted list if not already set
-      useCommandStore.getState().focusProjectList.length === 0 &&
-        enterFocus(focusProjectId, sorted)
+      enterFocus(focusProjectId, sorted)
     }
-  }, [])
+  }, [focusProjectId])
 
   // UX Principle 7: keyboard shortcuts for FocusMode
   useEffect(() => {
@@ -58,8 +57,8 @@ export function FocusMode({ data }) {
       aria-modal="true"
       aria-label={`Focus Mode — ${project.name}`}
     >
-      {/* Focus header */}
-      <div className="flex items-center justify-between px-8 py-4 border-b border-border flex-shrink-0">
+      {/* Focus header — wraps on small screens */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-8 py-3 sm:py-4 border-b border-border flex-shrink-0 gap-3">
         <div className="flex items-center gap-3">
           <StatusDot status={project.status} size="lg" />
           <div>
@@ -108,7 +107,13 @@ export function FocusMode({ data }) {
           <div className="bg-surface-mid border border-border rounded p-4">
             <div className="text-micro text-text-secondary uppercase tracking-widest mb-2">Progress</div>
             <div className="text-display font-bold mb-2">{project.progress}%</div>
-            <div className="w-full bg-surface-dark rounded-full h-2">
+            <div className="w-full bg-surface-dark rounded-full h-2"
+            role="progressbar"
+            aria-valuenow={project.progress}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`${project.name} progress`}
+          >
               <div className={`h-2 rounded-full ${DOT_COLOR[project.status]}`} style={{ width: `${project.progress}%` }} />
             </div>
           </div>

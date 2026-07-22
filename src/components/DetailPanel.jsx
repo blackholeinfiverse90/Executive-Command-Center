@@ -1,8 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useCommandStore } from '../store/commandStore'
 import {
   StatusDot, RiskCard, MilestoneRow,
-  EscalationCard, EvidenceCard, DecisionCard,
+  EscalationCard, EvidenceCard,
 } from './cards'
 
 function PanelSection({ label, children }) {
@@ -14,41 +14,70 @@ function PanelSection({ label, children }) {
   )
 }
 
-/**
- * DetailPanel — L2 Tier 3 investigation surface
- *
- * UX Phase 4 additions:
- *   - slide-in animation (panel-slide-in CSS class)
- *   - backdrop div — click outside to close (UX Principle 2)
- *   - Esc key closes panel (UX Principle 10)
- *   - back button navigates panel history stack (UX Principle 2)
- *   - panel type label in header for orientation
- */
 export function DetailPanel({ data }) {
-  const { activePanel, panelHistory, closePanel, panelBack } = useCommandStore()
-  if (!activePanel) return null
+  const { activePanel, panelHistory, closePanel, panelBack, openPanel } = useCommandStore()
+  const panelRef = useRef(null)
 
-  const { type, id } = activePanel
-  const canGoBack = panelHistory.length > 0
+  // Accessibility: focus trap — keep focus inside panel while open
+  useEffect(() => {
+    const panel = panelRef.current
+    if (!panel) return
 
-  // UX Principle 10: Esc closes panel
+    // Move focus into panel on open
+    const firstFocusable = panel.querySelector(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )
+    firstFocusable?.focus()
+
+    const handleTab = (e) => {
+      if (e.key !== 'Tab') return
+      const focusable = Array.from(
+        panel.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+      ).filter((el) => !el.disabled)
+      if (!focusable.length) return
+      const first = focusable[0]
+      const last  = focusable[focusable.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+
+    panel.addEventListener('keydown', handleTab)
+    return () => panel.removeEventListener('keydown', handleTab)
+  }, [activePanel])
+
+  // Esc closes panel
   useEffect(() => {
     const handler = (e) => { if (e.key === 'Escape') closePanel() }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [closePanel])
 
-  // Resolve entity
-  const project  = type === 'project'    ? data?.projects?.find((p) => p.id === id)      : null
-  const risk     = type === 'risk'       ? data?.risks?.find((r) => r.id === id)          : null
-  const alert    = type === 'alert'      ? data?.alerts?.find((a) => a.id === id)         : null
-  const decision = type === 'decision'   ? data?.decisions?.find((d) => d.id === id)      : null
-  const dep      = type === 'dependency' ? data?.dependencies?.find((d) => d.id === id)   : null
+  if (!activePanel) return null
 
-  const projectRisks       = project ? (data?.risks?.filter((r) => r.project === project.name)        ?? []) : []
-  const projectMilestones  = project ? (data?.milestones?.filter((m) => m.project === project.name)   ?? []) : []
-  const projectEscalations = project ? (data?.escalations?.filter((e) => e.project === project.name)  ?? []) : []
-  const projectEvidence    = project ? (data?.evidence?.filter((e) => e.project === project.name)     ?? []) : []
+  const { type, id } = activePanel
+  const canGoBack = panelHistory.length > 0
+
+  // Resolve entity
+  const project  = type === 'project'    ? data?.projects?.find((p) => p.id === id)     : null
+  const risk     = type === 'risk'       ? data?.risks?.find((r) => r.id === id)         : null
+  const alert    = type === 'alert'      ? data?.alerts?.find((a) => a.id === id)        : null
+  const decision = type === 'decision'   ? data?.decisions?.find((d) => d.id === id)     : null
+  const dep      = type === 'dependency' ? data?.dependencies?.find((d) => d.id === id)  : null
+
+  const projectRisks       = project ? (data?.risks?.filter((r) => r.project === project.name)       ?? []) : []
+  const projectMilestones  = project ? (data?.milestones?.filter((m) => m.project === project.name)  ?? []) : []
+  const projectEscalations = project ? (data?.escalations?.filter((e) => e.project === project.name) ?? []) : []
+  const projectEvidence    = project ? (data?.evidence?.filter((e) => e.project === project.name)    ?? []) : []
+
+  // F10: find related project for alert panels
+  const alertRelatedProject = alert
+    ? data?.projects?.find((p) => alert.title?.toLowerCase().includes(p.name.toLowerCase()))
+    : null
 
   const panelTitle  = project?.name ?? risk?.title ?? alert?.title ?? decision?.title ?? dep?.from ?? 'Detail'
   const panelStatus = project?.status ?? risk?.severity ?? alert?.severity ?? null
@@ -60,26 +89,25 @@ export function DetailPanel({ data }) {
 
   return (
     <>
-      {/* UX Principle 2: backdrop — click outside to close */}
+      {/* Backdrop — click outside to close */}
       <div className="panel-backdrop" onClick={closePanel} aria-hidden="true" />
 
-      {/* Panel — slide in from right */}
+      {/* Panel — responsive: full-width on mobile, 40vw on lg+ */}
       <aside
-        className="panel-slide-in fixed top-0 right-0 h-full w-[40vw] min-w-80 max-w-xl bg-surface-mid border-l border-border z-50 flex flex-col shadow-2xl"
-        aria-label="Detail Panel"
+        ref={panelRef}
+        className="panel-slide-in fixed top-0 right-0 h-full w-full sm:w-[40vw] sm:min-w-80 sm:max-w-xl bg-surface-mid border-l border-border z-50 flex flex-col shadow-2xl"
+        aria-label={`${TYPE_LABEL[type] ?? type} detail: ${panelTitle}`}
         role="dialog"
         aria-modal="true"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-2 min-w-0">
-            {/* UX Principle 2: back button when history exists */}
             {canGoBack && (
               <button
                 onClick={panelBack}
                 className="text-text-secondary hover:text-text-primary text-body mr-1 flex-shrink-0"
-                aria-label="Back"
-                title="Back"
+                aria-label="Back to previous panel"
               >
                 ←
               </button>
@@ -119,7 +147,7 @@ export function DetailPanel({ data }) {
                   </div>
                 </div>
                 <div className="text-caption text-text-secondary mb-1">Progress — {project.progress}%</div>
-                <div className="w-full bg-surface-dark rounded-full h-2 mb-3">
+                <div className="w-full bg-surface-dark rounded-full h-2 mb-3" role="progressbar" aria-valuenow={project.progress} aria-valuemin={0} aria-valuemax={100} aria-label={`${project.name} progress`}>
                   <div className="h-2 rounded-full bg-status-green" style={{ width: `${project.progress}%` }} />
                 </div>
                 <div className="text-caption text-text-secondary mb-0.5">Next Milestone</div>
@@ -166,13 +194,27 @@ export function DetailPanel({ data }) {
 
           {/* ALERT */}
           {alert && (
-            <PanelSection label="Alert Detail">
-              <div className="flex flex-col gap-2 text-body">
-                <div><span className="text-caption text-text-secondary">Severity: </span>{alert.severity}</div>
-                <div><span className="text-caption text-text-secondary">Raised at: </span>{alert.time}</div>
-                <div><span className="text-caption text-text-secondary">SLA Remaining: </span>{alert.slaRemaining}</div>
-              </div>
-            </PanelSection>
+            <>
+              <PanelSection label="Alert Detail">
+                <div className="flex flex-col gap-2 text-body">
+                  <div><span className="text-caption text-text-secondary">Severity: </span>{alert.severity}</div>
+                  <div><span className="text-caption text-text-secondary">Raised at: </span>{alert.time}</div>
+                  <div><span className="text-caption text-text-secondary">SLA Remaining: </span>{alert.slaRemaining}</div>
+                </div>
+              </PanelSection>
+              {/* F10: related project link — pushes to panel history */}
+              {alertRelatedProject && (
+                <PanelSection label="Related Project">
+                  <button
+                    className="flex items-center gap-2 text-body text-blue-400 hover:text-blue-300 transition-colors"
+                    onClick={() => openPanel('project', alertRelatedProject.id)}
+                  >
+                    <StatusDot status={alertRelatedProject.status} size="lg" />
+                    {alertRelatedProject.name} →
+                  </button>
+                </PanelSection>
+              )}
+            </>
           )}
 
           {/* DECISION */}
@@ -208,15 +250,34 @@ export function DetailPanel({ data }) {
 
         </div>
 
-        {/* Footer actions */}
-        <div className="px-5 py-3 border-t border-border flex gap-3 flex-shrink-0">
-          <button className="flex-1 bg-surface-light hover:bg-border text-body py-2 rounded transition-colors">
-            Raise Escalation
-          </button>
-          <button className="flex-1 bg-status-blue hover:opacity-90 text-white text-body py-2 rounded transition-colors">
-            View Full Detail
-          </button>
-        </div>
+        {/* Footer — project panels only */}
+        {type === 'project' && (
+          <div className="px-5 py-3 border-t border-border flex gap-3 flex-shrink-0">
+            <button
+              className="flex-1 bg-surface-light hover:bg-border text-body py-2 rounded transition-colors"
+              onClick={() => {
+                const proj = data?.projects?.find((p) => p.id === id)
+                window.alert(`Escalation raised for ${proj?.name ?? id}`)
+              }}
+            >
+              Raise Escalation
+            </button>
+            <button
+              className="flex-1 bg-status-blue hover:opacity-90 text-white text-body py-2 rounded transition-colors"
+              onClick={() => {
+                const sortedIds = data?.projects
+                  ? [...data.projects]
+                      .sort((a, b) => ({ red: 0, amber: 1, green: 2 }[a.status] ?? 9) - ({ red: 0, amber: 1, green: 2 }[b.status] ?? 9))
+                      .map((p) => p.id)
+                  : []
+                closePanel()
+                useCommandStore.getState().enterFocus(id, sortedIds)
+              }}
+            >
+              Full Focus View
+            </button>
+          </div>
+        )}
       </aside>
     </>
   )

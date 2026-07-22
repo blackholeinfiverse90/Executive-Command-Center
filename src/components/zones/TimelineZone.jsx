@@ -1,7 +1,11 @@
+import { lazy, Suspense } from 'react'
 import { MilestoneRow } from '../cards'
 import { byVariance } from '../../config/informationHierarchy'
 import { ZoneShell } from './ZoneShell'
-import { MilestoneGantt } from '../charts'
+
+const LazyMilestoneGantt = lazy(() =>
+  import('../charts').then((m) => ({ default: m.MilestoneGantt }))
+)
 
 export function TimelineZone({ milestones }) {
   const sorted = [...milestones].sort(byVariance)
@@ -16,11 +20,13 @@ export function TimelineZone({ milestones }) {
     >
       <div className="grid grid-cols-12 gap-4">
         {/* Gantt chart — left 5 cols */}
-        {/* Visualization: TIMELINE_STRATEGY — variance as spatial bar extension */}
-        {/* Executive sees slip as physical length, not arithmetic */}
         <div className="col-span-12 md:col-span-5">
           <div className="text-micro text-text-secondary uppercase tracking-wide mb-2">Variance (days)</div>
-          <MilestoneGantt milestones={sorted} />
+          <Suspense fallback={
+            <div className="animate-pulse bg-surface-light rounded" style={{ height: milestones.length * 28 + 8 }} />
+          }>
+            <LazyMilestoneGantt milestones={sorted} />
+          </Suspense>
         </div>
 
         {/* Detail table — right 7 cols */}

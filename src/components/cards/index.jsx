@@ -3,6 +3,7 @@
  * Every component here has a contract defined in src/config/componentCatalogue.js
  * Do not add props or change behavior without updating the catalogue first.
  */
+import { memo } from 'react'
 import clsx from 'clsx'
 
 // ─── SHARED LOOKUP TABLES ─────────────────────────────────────────────────────
@@ -88,7 +89,7 @@ export function MetricCard({ label, value, unit, trend, delta }) {
  * Catalogue: TIER_2_COMPONENTS.ProjectHealthCard
  * Constraint: "BLOCKED" nextMilestone renders visually distinct in red.
  */
-export function ProjectHealthCard({ project, onClick, onDoubleClick }) {
+export const ProjectHealthCard = memo(function ProjectHealthCard({ project, onClick, onDoubleClick }) {
   const isBlocked = project.nextMilestone === 'BLOCKED'
   return (
     <div
@@ -123,12 +124,13 @@ export function ProjectHealthCard({ project, onClick, onDoubleClick }) {
     </div>
   )
 }
+)
 
 /**
  * AlertCard — alert row with severity border and SLA countdown.
  * Catalogue: TIER_2_COMPONENTS.AlertCard
  */
-export function AlertCard({ alert, onClick }) {
+export const AlertCard = memo(function AlertCard({ alert, onClick }) {
   const borderText = {
     critical: 'border-status-red',
     high:     'border-status-amber',
@@ -158,6 +160,7 @@ export function AlertCard({ alert, onClick }) {
     </div>
   )
 }
+)
 
 /**
  * RiskCard — risk row with severity dot, title, project/owner, mitigation status.
@@ -165,7 +168,7 @@ export function AlertCard({ alert, onClick }) {
  * Fix: added onClick — risks must be clickable to open L2 detail.
  * Fix: mitigation "Pending" now renders in amber as a warning signal.
  */
-export function RiskCard({ risk, onClick }) {
+export const RiskCard = memo(function RiskCard({ risk, onClick }) {
   const mitigationColor = risk.mitigation === 'Pending' || risk.mitigation === 'None'
     ? 'text-amber-400'
     : 'text-text-secondary'
@@ -189,6 +192,7 @@ export function RiskCard({ risk, onClick }) {
     </div>
   )
 }
+)
 
 /**
  * ResourceBar — team utilization bar.

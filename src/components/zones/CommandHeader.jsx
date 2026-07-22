@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import clsx from 'clsx'
 import { StatusDot } from '../cards'
 import { TIER_1, COGNITIVE_RULES } from '../../config/informationHierarchy'
@@ -27,15 +28,22 @@ function jumpToZone(anchorId) {
  *   - Zone-jump shortcuts (1–7 keys, shown on ? press)
  *   - Keyboard shortcut toggle button
  */
-export function CommandHeader({ health, alertCount, lastUpdated, deliveryConfidence, confidenceTrend }) {
+export function CommandHeader({ health, alertCount, lastUpdated, deliveryConfidence, confidenceTrend, dataSource }) {
   const { isRefreshPulsing, lastRefreshed, toggleShortcuts } = useCommandStore()
 
   const displayCount = Math.min(alertCount, COGNITIVE_RULES.tier1MaxItems)
   const isCapped     = alertCount > COGNITIVE_RULES.tier1MaxItems
 
+  // F15: re-evaluate staleness every 30s so the amber warning appears live
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000)
+    return () => clearInterval(id)
+  }, [])
+
   // UX Principle 9: stale warning — amber timestamp if data > 2 minutes old
   const isStale = lastRefreshed
-    ? (Date.now() - lastRefreshed.getTime()) > 120_000
+    ? (now - lastRefreshed.getTime()) > 120_000
     : false
 
   return (
@@ -44,7 +52,16 @@ export function CommandHeader({ health, alertCount, lastUpdated, deliveryConfide
         'h-14 bg-surface-mid border-b border-border flex items-center justify-between px-6 flex-shrink-0 transition-all',
         isRefreshPulsing && 'refresh-pulse'
       )}
+      aria-label="Command Center header"
     >
+      {/* Accessibility: live region announces data refresh to screen readers */}
+      <span
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {isRefreshPulsing ? 'Dashboard data refreshed' : ''}
+      </span>
       {/* Identity + zone jump hints */}
       <div className="flex items-center gap-4">
         <span className="text-body font-semibold tracking-wide">BHIV COMMAND CENTER</span>
@@ -69,10 +86,26 @@ export function CommandHeader({ health, alertCount, lastUpdated, deliveryConfide
       {/* Tier 1 signals */}
       <div className="flex items-center gap-5">
 
+        {/* Data source badge — live vs mock */}
+        {dataSource && (
+          <span
+            className={clsx(
+              'text-micro px-1.5 py-0.5 rounded font-semibold',
+              dataSource === 'setu-live'
+                ? 'bg-green-900 text-green-300'
+                : 'bg-amber-900 text-amber-300'
+            )}
+            title={dataSource === 'setu-live' ? 'Connected to SETU PMC API' : 'Using mock fallback data'}
+          >
+            {dataSource === 'setu-live' ? 'LIVE' : 'MOCK'}
+          </span>
+        )}
+
         {/* Signal 4 — Trust: data freshness with stale warning */}
         <span
           className={clsx('text-caption', isStale ? 'text-amber-400' : 'text-text-secondary')}
           title={isStale ? 'Data may be stale — refresh pending' : TIER_1.signals[3].cognitiveRole}
+          aria-label={`Last updated ${lastUpdated}${isStale ? ', data may be stale' : ''}`}
         >
           {isStale ? '⚠ ' : ''}Updated {lastUpdated}
         </span>

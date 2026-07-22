@@ -1,7 +1,20 @@
 import clsx from 'clsx'
+import { lazy, Suspense } from 'react'
 import { ZoneShell } from './ZoneShell'
 import { ForecastStat } from '../cards'
-import { ConfidenceTrendChart, PortfolioDonut } from '../charts'
+
+// Lazy-load the entire charts module — keeps Recharts (~700KB) out of the initial bundle.
+// Charts render 200-400ms after the rest of the dashboard — acceptable for Tier 2 visualizations.
+const LazyConfidenceTrendChart = lazy(() =>
+  import('../charts').then((m) => ({ default: m.ConfidenceTrendChart }))
+)
+const LazyPortfolioDonut = lazy(() =>
+  import('../charts').then((m) => ({ default: m.PortfolioDonut }))
+)
+
+function ChartSkeleton({ height }) {
+  return <div className="animate-pulse bg-surface-light rounded" style={{ height }} />
+}
 
 export function DeliveryZone({ forecast, confidenceHistory, confidenceTrend }) {
   const { onTrack, atRisk, blocked, total, portfolioConfidence, confidenceDelta, projectedSlipDays } = forecast
@@ -14,17 +27,19 @@ export function DeliveryZone({ forecast, confidenceHistory, confidenceTrend }) {
     <ZoneShell id="zone-delivery" label="Delivery Forecast">
 
       {/* Trend chart — 7-day confidence history */}
-      {/* Visualization: TREND_STRATEGY — shape shows direction, not just current value */}
       {confidenceHistory?.length > 0 && (
         <div className="mb-3">
-          <ConfidenceTrendChart history={confidenceHistory} trend={confidenceTrend} />
+          <Suspense fallback={<ChartSkeleton height={52} />}>
+            <LazyConfidenceTrendChart history={confidenceHistory} trend={confidenceTrend} />
+          </Suspense>
         </div>
       )}
 
-      {/* Portfolio donut + stats side by side */}
-      {/* Visualization: PROGRESS_STRATEGY — donut shows part-to-whole health split */}
+      {/* Portfolio donut + stats */}
       <div className="flex items-center gap-4">
-        <PortfolioDonut onTrack={onTrack} atRisk={atRisk} blocked={blocked} total={total} />
+        <Suspense fallback={<ChartSkeleton height={80} />}>
+          <LazyPortfolioDonut onTrack={onTrack} atRisk={atRisk} blocked={blocked} total={total} />
+        </Suspense>
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 flex-1">
           <ForecastStat label="On Track" value={onTrack} color="green" />
           <ForecastStat label="At Risk"  value={atRisk}  color="amber" />

@@ -1,6 +1,9 @@
-// Mock data service — replace fetch calls with real API endpoints
+// Mock data service — used as fallback when SETU API is unreachable
+// To connect to live data, the adapter in services/adapter.js calls this only on failure.
 
 export const fetchCommandData = async () => ({
+  dataAsOf: new Date().toISOString(),
+  dataSource: 'mock-fallback',
   summary: {
     overallHealth: 'amber',
     deliveryConfidence: 94,
